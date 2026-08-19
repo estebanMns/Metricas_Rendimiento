@@ -59,3 +59,28 @@ export interface ProgressCallbackData {
 }
 
 export type ProgressCallback = (data: ProgressCallbackData) => void;
+
+/**
+ * Modelos para la Métrica INP (Interaction to Next Paint - Core Web Vital)
+ */
+export type INPRating = 'GOOD' | 'NEEDS_IMPROVEMENT' | 'POOR';
+
+export interface INPInteractionEntry {
+  id: string;
+  interactionType: 'pointerdown' | 'click' | 'input' | 'keydown';
+  targetElement: string;
+  timestamp: number;
+  totalDurationMs: number;
+  inputDelayMs: number; // Fase 1: Tiempo en cola del Event Loop antes de ejecutar el handler
+  processingDurationMs: number; // Fase 2: Tiempo de ejecución síncrona del callback JS
+  presentationDelayMs: number; // Fase 3: Tiempo hasta que el navegador pinta en pantalla (Next Paint)
+  rating: INPRating;
+}
+
+export interface INPSummary {
+  worstInpMs: number; // Percentil 98 / Peor interacción registrada
+  averageInpMs: number;
+  rating: INPRating;
+  totalInteractions: number;
+  recentInteractions: INPInteractionEntry[];
+}

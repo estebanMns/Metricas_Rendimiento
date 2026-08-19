@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, CheckCircle, Code2, Layers, Cpu, ShieldAlert, Sparkles, BookOpen } from 'lucide-react';
+import { X, Code2, Layers, ShieldAlert, Activity, CheckCircle, Clock, Zap } from 'lucide-react';
 
 interface ArchitectureModalProps {
   isOpen: boolean;
@@ -22,10 +22,10 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
             </div>
             <div>
               <h2 className="text-base lg:text-lg font-bold text-white">
-                Arquitectura de Software y Principios POO / SOLID
+                Fundamentos Técnicos: POO, Event Loop y Validación con INP
               </h2>
               <p className="text-xs text-slate-400">
-                Diseño profesional con Principio de Responsabilidad Única (SRP) y patrones de diseño.
+                Cómo la métrica Interaction to Next Paint demuestra empíricamente la salud del Event Loop.
               </p>
             </div>
           </div>
@@ -39,78 +39,81 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
 
         {/* Modal Scrollable Body */}
         <div className="overflow-y-auto p-6 space-y-6 text-slate-300 text-xs sm:text-sm">
-          {/* Section 1: POO & Single Responsibility Principle (SRP) */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">
-              <Code2 className="w-4 h-4" />
-              <span>1. Clases Implementadas y Principio de Responsabilidad Única (SRP)</span>
+          {/* Section 1: How INP Validates the Event Loop */}
+          <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-950/40 via-slate-950 to-slate-900 border border-indigo-500/40 space-y-3">
+            <div className="flex items-center gap-2 text-indigo-300 font-bold text-sm">
+              <Activity className="w-4 h-4 text-cyan-400" />
+              <span>¿Cómo valida el INP (Interaction to Next Paint) el uso del Event Loop?</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
-                <span className="font-mono font-bold text-cyan-300">TrafficDataGenerator</span>
-                <p className="text-xs text-slate-400">
-                  <strong>Responsabilidad Única:</strong> Exclusivamente generar datos sintéticos, nodos viales y lotes de telemetría geoespacial (pings de GPS y velocidades). No conoce nada de render ni de estrategias.
+            <p className="text-xs text-slate-300 leading-relaxed">
+              El <strong>INP (Interaction to Next Paint)</strong> es la métrica oficial de Google Core Web Vitals que mide la latencia total desde que un usuario realiza una acción física (clic, tap, tecla o arrastre) hasta que el navegador presenta el siguiente fotograma visual con el cambio en la pantalla.
+            </p>
+
+            <div className="p-3 bg-slate-950/90 rounded-lg border border-slate-800 font-mono text-[11px] text-cyan-300">
+              INP = Input Delay (Espera en Cola) + Processing Time (Callback JS) + Presentation Delay (Next Paint)
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+              <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-800/50 space-y-1">
+                <span className="font-bold text-rose-300 flex items-center gap-1.5 text-xs">
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  Con Hilo Principal Bloqueado (Síncrono 100-150ms)
+                </span>
+                <p className="text-[11px] text-slate-400">
+                  1. <strong>Input Delay se dispara:</strong> El evento del usuario ingresa a la cola de Macrotareas, pero como el Call Stack está saturado, el Event Loop no puede tomar el evento hasta que termine el cálculo pesado.<br/>
+                  2. <strong>Presentation Delay se bloquea:</strong> El navegador no puede ejecutar el ciclo de estilo, layout y pintura.<br/>
+                  3. <strong>Resultado:</strong> INP salta a &gt; 500 ms (Clasificación: <em>POOR / Deficiente</em>).
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
-                <span className="font-mono font-bold text-cyan-300">TrafficMetricsEngine</span>
-                <p className="text-xs text-slate-400">
-                  <strong>Responsabilidad Única:</strong> Lógica de cálculo matemático puro e intensivo en CPU (fórmulas Haversine, fricción vial, matrices de congestión). No maneja asincronía ni estado de UI.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
-                <span className="font-mono font-bold text-cyan-300">SynchronousBlockingStrategy</span>
-                <p className="text-xs text-slate-400">
-                  <strong>Responsabilidad Única:</strong> Implementar la estrategia de ejecución síncrona continua. Satura deliberadamente el Call Stack en el hilo principal sin ceder control al Event Loop.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
-                <span className="font-mono font-bold text-cyan-300">EventLoopDeferredStrategy</span>
-                <p className="text-xs text-slate-400">
-                  <strong>Responsabilidad Única:</strong> Implementar la estrategia no bloqueante mediante particionamiento de tiempo (time-slicing ~12ms), microtareas (<code className="text-amber-300 font-mono">queueMicrotask</code>) y cesión voluntaria (<code className="text-amber-300 font-mono">yield</code>/<code className="text-amber-300 font-mono">setTimeout</code>).
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
-                <span className="font-mono font-bold text-cyan-300">EventLoopLagMonitor</span>
-                <p className="text-xs text-slate-400">
-                  <strong>Responsabilidad Única:</strong> Medir el drift de latencia del hilo principal y la tasa de FPS mediante heartbeats y <code className="text-amber-300 font-mono">requestAnimationFrame</code>, alertando cuando se supera el rango crítico de <strong>100 - 150 ms</strong>.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
-                <span className="font-mono font-bold text-cyan-300">TrafficProcessingController (Fachada)</span>
-                <p className="text-xs text-slate-400">
-                  <strong>Responsabilidad Única:</strong> Orquestar la inyección de dependencias, la selección de estrategias (Strategy Pattern), los tokens de cancelación y el flujo reactivo de eventos hacia React.
+              <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-800/50 space-y-1">
+                <span className="font-bold text-emerald-300 flex items-center gap-1.5 text-xs">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  Con Event Loop Diferido (Time-Slicing & Microtareas)
+                </span>
+                <p className="text-[11px] text-slate-400">
+                  1. <strong>Input Delay mínimo (&lt;12ms):</strong> Como el cálculo cede voluntariamente el hilo cada 10-12ms, el Event Loop atiende el clic del usuario en la siguiente frontera de tiempo.<br/>
+                  2. <strong>Presentation Delay fluido:</strong> El Render Pipeline actualiza la pantalla a 60 FPS (cada 16.6ms).<br/>
+                  3. <strong>Resultado:</strong> INP óptimo de 15-50 ms (Clasificación: <em>GOOD / Bueno</em>).
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Section 2: Event Loop & The 100-150ms Threshold */}
-          <div className="space-y-3 pt-3 border-t border-slate-800">
-            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-              <ShieldAlert className="w-4 h-4" />
-              <span>2. Fundamentos del Event Loop y el Rango Crítico de 100 - 150 ms</span>
+          {/* Section 2: SOLID & POO Architecture */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">
+              <Code2 className="w-4 h-4" />
+              <span>Arquitectura POO y Responsabilidad Única (SRP)</span>
             </div>
-            <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-800/50 space-y-2 text-xs leading-relaxed text-slate-300">
-              <p>
-                En JavaScript (monohilo / Single-Threaded), el <strong>Event Loop</strong> coordina la ejecución de código, la recolección y procesamiento de eventos, y la ejecución de subtareas encoladas.
-              </p>
-              <ul className="list-disc list-inside space-y-1 text-slate-400">
-                <li>
-                  <strong>Límite de Long Tasks (50 ms):</strong> Según el modelo RAIL de Google, cualquier tarea síncrona continua que supere los 50 ms se clasifica como <em>Long Task</em>.
-                </li>
-                <li>
-                  <strong>Zona de Congelamiento (100 - 150 ms):</strong> En este rango específico, el usuario percibe retraso táctil evidente (Jank), los eventos de arrastre (sliders) se bloquean por completo y el navegador suspende la pintura a 60 FPS (16.6ms por frame), reduciendo los FPS a 0.
-                </li>
-                <li>
-                  <strong>Solución con Time-Slicing y Microtareas:</strong> Al dividir el cálculo en fragmentos de 10-14 ms y ceder el control al Event Loop, el motor de JavaScript puede despachar las microtareas pendientes, atender los clics del usuario y ejecutar el Render Pipeline fluidamente.
-                </li>
-              </ul>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+                <span className="font-mono font-bold text-cyan-300">INPMonitor</span>
+                <p className="text-xs text-slate-400">
+                  <strong>SRP:</strong> Medir y desglosar las 3 fases de latencia de las interacciones del usuario (Input Delay, Processing, Presentation) mediante PerformanceObserver y doble rAF.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+                <span className="font-mono font-bold text-cyan-300">MainThreadLockManager</span>
+                <p className="text-xs text-slate-400">
+                  <strong>SRP:</strong> Gestionar el bloqueo continuo síncrono en ráfagas de 100-150ms y el desbloqueo instantáneo con liberación del Call Stack.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+                <span className="font-mono font-bold text-cyan-300">EventLoopDeferredStrategy</span>
+                <p className="text-xs text-slate-400">
+                  <strong>SRP:</strong> Estrategia no bloqueante con microtareas (<code className="text-amber-300">queueMicrotask</code>) y cesión (<code className="text-amber-300">scheduler.yield</code> / <code className="text-amber-300">setTimeout</code>).
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+                <span className="font-mono font-bold text-cyan-300">TrafficProcessingController</span>
+                <p className="text-xs text-slate-400">
+                  <strong>SRP:</strong> Fachada que orquesta el generador de datos, motores de cálculo, monitores de lag e INP y notificaciones a la UI.
+                </p>
+              </div>
             </div>
           </div>
         </div>
