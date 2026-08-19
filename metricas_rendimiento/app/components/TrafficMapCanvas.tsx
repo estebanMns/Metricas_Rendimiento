@@ -9,38 +9,54 @@ interface TrafficMapCanvasProps {
   mode: string;
 }
 
-export const TrafficMapCanvas: React.FC<TrafficMapCanvasProps> = ({ isBlocked, mode }) => {
+export const TrafficMapCanvas: React.FC<TrafficMapCanvasProps> = ({ isBlocked }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<TrafficCanvasRenderer | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
     const renderer = new TrafficCanvasRenderer();
     rendererRef.current = renderer;
 
-    const resizeCanvas = () => {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * window.devicePixelRatio;
-      canvas.height = rect.height * window.devicePixelRatio;
+    const updateCanvasSize = () => {
+      const rect = container.getBoundingClientRect();
+      const width = Math.max(300, rect.width);
+      const height = Math.max(250, rect.height);
+      const dpr = window.devicePixelRatio || 1;
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        ctx.scale(dpr, dpr);
       }
-      renderer.initializeFleet(70, rect.width, rect.height);
+
+      renderer.initializeFleet(70, width, height);
     };
 
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    updateCanvasSize();
+
+    // Observador de cambios de tamaño del contenedor
+    const resizeObserver = new ResizeObserver(() => {
+      updateCanvasSize();
+    });
+    resizeObserver.observe(container);
 
     let animationFrameId: number;
 
     const renderLoop = () => {
-      const rect = canvas.getBoundingClientRect();
+      const rect = container.getBoundingClientRect();
+      const width = Math.max(300, rect.width);
+      const height = Math.max(250, rect.height);
       const ctx = canvas.getContext('2d');
+
       if (ctx) {
-        renderer.renderFrame(ctx, rect.width, rect.height);
+        renderer.renderFrame(ctx, width, height);
       }
       animationFrameId = requestAnimationFrame(renderLoop);
     };
@@ -48,7 +64,7 @@ export const TrafficMapCanvas: React.FC<TrafficMapCanvasProps> = ({ isBlocked, m
     animationFrameId = requestAnimationFrame(renderLoop);
 
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
+      resizeObserver.disconnect();
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
@@ -61,7 +77,10 @@ export const TrafficMapCanvas: React.FC<TrafficMapCanvasProps> = ({ isBlocked, m
   }, [isBlocked]);
 
   return (
-    <div className="relative w-full h-[320px] lg:h-[380px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl">
+    <div
+      ref={containerRef}
+      className="relative w-full h-[320px] lg:h-[380px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl"
+    >
       {/* Canvas Element */}
       <canvas
         ref={canvasRef}
@@ -70,7 +89,10 @@ export const TrafficMapCanvas: React.FC<TrafficMapCanvasProps> = ({ isBlocked, m
 
       {/* Overlay UI Badges */}
       <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-xs font-mono text-slate-300">
-        <Compass className="w-4 h-4 text-cyan-400 animate-spin" style={{ animationDuration: isBlocked ? '0s' : '8s' }} />
+        <Compass
+          className={`w-4 h-4 text-cyan-400 ${isBlocked ? '' : 'animate-spin'}`}
+          style={{ animationDuration: '8s' }}
+        />
         <span>RADAR DE TRÁFICO GEOESPACIAL EN VIVO</span>
       </div>
 
@@ -85,8 +107,8 @@ export const TrafficMapCanvas: React.FC<TrafficMapCanvasProps> = ({ isBlocked, m
           <div className="flex items-center gap-3 px-6 py-3 rounded-xl bg-rose-950/90 border border-rose-500 shadow-2xl text-rose-200 animate-pulse">
             <AlertTriangle className="w-6 h-6 text-rose-400 shrink-0" />
             <div>
-              <p className="font-bold text-sm">HILO PRINCIPAL SATURADO (LONG TASK ACTIVA)</p>
-              <p className="text-xs text-rose-300">El navegador no puede despachar requestAnimationFrame. El render está congelado.</p>
+              <p className="font-bold text-sm">HILO PRINCIPAL SATURADO (100 - 150 ms)</p>
+              <p className="text-xs text-rose-300">El Event Loop no puede despachar requestAnimationFrame ni eventos de usuario.</p>
             </div>
           </div>
         </div>
@@ -96,7 +118,7 @@ export const TrafficMapCanvas: React.FC<TrafficMapCanvasProps> = ({ isBlocked, m
       <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between px-3.5 py-1.5 rounded-lg bg-slate-950/70 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-400">
         <span>Coords: 19.4326° N, 99.1332° W</span>
         <span className={isBlocked ? 'text-rose-400 font-bold' : 'text-emerald-400'}>
-          {isBlocked ? '🛑 ANIMACIÓN EN PAUSA FORZADA' : '🟢 PIPELINE DE RENDER EN TIEMPO REAL'}
+          {isBlocked ? '🛑 ANIMACIÓN CONGELADA (JANK)' : '🟢 PIPELINE DE RENDER EN TIEMPO REAL (60 FPS)'}
         </span>
       </div>
     </div>

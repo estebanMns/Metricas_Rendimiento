@@ -12,16 +12,17 @@ export type LockStateListener = (isLocked: boolean, currentCycleLagMs: number) =
  * sostenido y desbloqueo controlado del hilo principal (Main Thread).
  * 
  * Mecánica del Event Loop:
- * - Al activar "Bloquear", ejecuta un bucle síncrono intensivo calibrado exactamente en el rango
- *   de 100 a 150 ms por ciclo, ocupando el Call Stack al 100% y degradando el render y la interactividad.
- * - Al final de cada ráfaga de 100-150 ms, cede un breve instante al Event Loop (macrotarea 0ms),
- *   permitiendo que el navegador reciba la acción de "Desbloquear" del usuario.
- * - Al activar "Desbloquear", cancela inmediatamente los ciclos de bloqueo y libera el hilo principal,
- *   restaurando la fluidez a 60 FPS.
+ * - Al activar "Bloquear": ejecuta un bucle síncrono intensivo en el rango calibrado de
+ *   100 a 150 ms por ciclo, ocupando el Call Stack al 100%.
+ * - Al finalizar cada ciclo de 100-150ms, cede una ventana breve (16ms) al Event Loop,
+ *   lo que permite observar el salto de frames (Jank), registrar el retraso en INP y
+ *   capturar con fiabilidad la acción de "Desbloquear" del usuario.
+ * - Al activar "Desbloquear": cancela inmediatamente el temporizador y libera el hilo,
+ *   restaurando la animación fluida a 60 FPS.
  */
 export class MainThreadLockManager {
   private isLocked: boolean = false;
-  private targetBlockDurationMs: number = 125; // Predeterminado: rango 100 - 150 ms
+  private targetBlockDurationMs: number = 125; // Rango predeterminado: 100 - 150 ms
   private readonly metricsEngine: TrafficMetricsEngine;
   private readonly sampleData: VehicleTelemetry[];
   private listeners: LockStateListener[] = [];
@@ -61,7 +62,6 @@ export class MainThreadLockManager {
 
   /**
    * BOTÓN 1: BLOQUEAR EL HILO PRINCIPAL
-   * Inicia el ciclo sostenido de sobrecarga síncrona en el rango de 100 - 150 ms
    */
   public lockMainThread(): void {
     if (this.isLocked) return;
@@ -74,23 +74,19 @@ export class MainThreadLockManager {
       const cycleStart = performance.now();
       let index = 0;
 
-      // BUCLE SÍNCRONO INTENSIVO: Ocupa el Call Stack durante el tiempo configurado (100 - 150 ms)
-      // Mientras este while corre, el hilo principal está COMPLETAMENTE BLOQUEADO:
-      // - El canvas de autos se congela.
-      // - Los sliders quedan inmovilizados.
-      // - Los clics no se procesan y se acumulan en la cola.
+      // BUCLE SÍNCRONO INTENSIVO: Ocupa el Call Stack durante 100 - 150 ms continuos
       while (performance.now() - cycleStart < this.targetBlockDurationMs) {
         const vehicle = this.sampleData[index % this.sampleData.length];
-        this.metricsEngine.processRecordCalculations(vehicle, 400);
+        this.metricsEngine.processRecordCalculations(vehicle, 350);
         index++;
       }
 
       const actualLag = performance.now() - cycleStart;
       this.notify(true, Math.round(actualLag));
 
-      // Si sigue bloqueado, programamos el siguiente ciclo síncrono
+      // Si el usuario no ha desbloqueado, programa el siguiente ciclo
       if (this.isLocked) {
-        this.currentTimeoutId = setTimeout(executeBlockingCycle, 0);
+        this.currentTimeoutId = setTimeout(executeBlockingCycle, 16);
       }
     };
 
@@ -99,7 +95,6 @@ export class MainThreadLockManager {
 
   /**
    * BOTÓN 2: DESBLOQUEAR EL HILO PRINCIPAL
-   * Detiene los ciclos de sobrecarga y libera el Event Loop inmediatamente
    */
   public unlockMainThread(): void {
     this.isLocked = false;
@@ -108,5 +103,19 @@ export class MainThreadLockManager {
       this.currentTimeoutId = null;
     }
     this.notify(false, 0);
+  }
+
+  /**
+   * Ejecuta una única ráfaga síncrona de 100 - 150 ms (Bloqueo instantáneo)
+   */
+  public executeSingleBurst(durationMs: number = 150): number {
+    const start = performance.now();
+    let index = 0;
+    while (performance.now() - start < durationMs) {
+      const vehicle = this.sampleData[index % this.sampleData.length];
+      this.metricsEngine.processRecordCalculations(vehicle, 350);
+      index++;
+    }
+    return Math.round(performance.now() - start);
   }
 }
